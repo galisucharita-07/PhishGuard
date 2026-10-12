@@ -1,0 +1,277 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="PhishGuard machine-learning phishing URL detector">
+    <title>PhishGuard | URL Security</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+          rel="stylesheet">
+</head>
+
+<body>
+<div class="background-glow"></div>
+
+<main class="container">
+
+    <header class="topbar">
+        <a href="/" class="brand">
+            <span class="brand-icon">P</span>
+            <span>Phish<span class="brand-highlight">Guard</span></span>
+        </a>
+
+        <span class="status-indicator">
+            <span class="status-dot"></span>
+            ML Detection System
+        </span>
+    </header>
+
+    <section class="hero">
+        <div class="eyebrow">✦ AI-POWERED URL SECURITY</div>
+
+        <h1>Don't trust a link.<br>
+            <span>Verify it first.</span>
+        </h1>
+
+        <p class="hero-description">
+            Analyze URLs with a machine-learning model to identify
+            potential phishing threats.
+        </p>
+    </section>
+
+    <section class="scanner-card">
+        <div class="scanner-heading">
+            <div>
+                <h2>URL Scanner</h2>
+                <p>Enter a website address to analyze it.</p>
+            </div>
+            <div class="shield-icon">⌑</div>
+        </div>
+
+        <form method="POST" action="/" class="scan-form">
+            <label for="url">Website URL</label>
+
+            <div class="input-wrapper">
+                <span class="input-icon">↗</span>
+                <input
+                    type="text"
+                    id="url"
+                    name="url"
+                    placeholder="https://example.com"
+                    value="{{ submitted_url or '' }}"
+                    maxlength="2048"
+                    autocomplete="url"
+                    required
+                >
+            </div>
+
+            <button type="submit" class="scan-button">
+                Analyze URL <span class="button-arrow">→</span>
+            </button>
+        </form>
+
+        <p class="privacy-note">
+            Check suspicious links before opening them.
+        </p>
+    </section>
+
+    {% if result %}
+    <section class="result-section" aria-live="polite">
+
+        {% if result.status == "not_found" %}
+
+        <div class="result-card not-found-card">
+            <div class="result-top">
+                <div class="result-symbol error-symbol">!</div>
+                <span class="result-tag tag-error">DOMAIN NOT FOUND</span>
+            </div>
+
+            <h2>Website Not Found</h2>
+            <p class="result-description">
+                This hostname could not be resolved through DNS.
+                Check the spelling or try again later.
+            </p>
+
+            <div class="submitted-url">
+                <span class="detail-label">Submitted URL</span>
+                <p>{{ result.submitted_url }}</p>
+            </div>
+
+            <div class="message-box">
+                <strong>DNS lookup failed</strong>
+                <p>
+                    The domain may not exist or its DNS records may
+                    be temporarily unavailable.
+                </p>
+            </div>
+        </div>
+
+        {% elif result.status == "invalid" %}
+
+        <div class="result-card not-found-card">
+            <div class="result-top">
+                <div class="result-symbol error-symbol">!</div>
+                <span class="result-tag tag-error">INVALID URL</span>
+            </div>
+
+            <h2>Invalid URL</h2>
+            <p class="result-description">
+                Enter a valid website address, such as example.com
+                or https://example.com.
+            </p>
+
+            {% if result.submitted_url %}
+            <div class="submitted-url">
+                <span class="detail-label">Submitted URL</span>
+                <p>{{ result.submitted_url }}</p>
+            </div>
+            {% endif %}
+        </div>
+
+        {% elif result.status == "analyzed" %}
+
+        <div class="result-card
+            {% if result.level == 'No Risk' %}no-risk-card{% endif %}">
+
+            <div class="result-top">
+                <div class="result-symbol
+                    {% if result.level == 'No Risk' or result.level == 'Low' %}
+                        safe-symbol
+                    {% elif result.level == 'Medium' %}
+                        warning-symbol
+                    {% else %}
+                        danger-symbol
+                    {% endif %}">
+                    {% if result.level == 'No Risk' or result.level == 'Low' %}
+                        ✓
+                    {% elif result.level == 'Medium' %}
+                        ⚠
+                    {% else %}
+                        !
+                    {% endif %}
+                </div>
+
+                <span class="result-tag
+                    {% if result.level == 'No Risk' or result.level == 'Low' %}
+                        tag-safe
+                    {% elif result.level == 'Medium' %}
+                        tag-warning
+                    {% else %}
+                        tag-danger
+                    {% endif %}">
+                    {{ result.level }}
+                </span>
+            </div>
+
+            {% if result.level == "No Risk" %}
+                <h2>No Risk — Trusted Domain</h2>
+                <p class="result-description">
+                    This hostname matches your configured trusted-domain
+                    list. This allowlist result is not a guarantee that
+                    every page or link on the domain is safe.
+                </p>
+            {% elif result.level == "High" %}
+                <h2>Potential Phishing Detected</h2>
+                <p class="result-description">
+                    The model classified this URL as potentially suspicious.
+                    Avoid entering passwords or payment details unless
+                    you independently verify the link.
+                </p>
+            {% elif result.level == "Medium" %}
+                <h2>Suspicious URL</h2>
+                <p class="result-description">
+                    The model identified potentially suspicious patterns.
+                    Verify the domain before proceeding.
+                </p>
+            {% else %}
+                <h2>Lower Model-Estimated Risk</h2>
+                <p class="result-description">
+                    The model assigned this URL a lower risk level.
+                    This does not guarantee that the website is safe.
+                </p>
+            {% endif %}
+
+            <div class="submitted-url">
+                <span class="detail-label">Analyzed URL</span>
+                <p>{{ result.submitted_url }}</p>
+            </div>
+
+            <div class="score-area">
+                <div class="score-heading">
+                    <span>Phishing model score</span>
+                    <strong>{{ "%.2f"|format(result.score) }}%</strong>
+                </div>
+
+                <div class="score-track">
+                    <div class="score-fill
+                        {% if result.level == 'No Risk' or result.level == 'Low' %}
+                            fill-safe
+                        {% elif result.level == 'Medium' %}
+                            fill-warning
+                        {% else %}
+                            fill-danger
+                        {% endif %}"
+                        style="width: {{ result.score }}%;">
+                    </div>
+                </div>
+
+                <p class="score-caption">
+                    This is a model score, not a verified probability
+                    of malicious activity.
+                </p>
+            </div>
+
+            <div class="findings-area">
+                <h3>Analysis Details</h3>
+
+                {% for finding in result.findings %}
+                <div class="finding-item">
+                    <span class="finding-bullet">•</span>
+                    <p>{{ finding }}</p>
+                </div>
+                {% endfor %}
+            </div>
+
+        </div>
+        {% endif %}
+    </section>
+    {% endif %}
+
+    <section class="features">
+        <div class="feature-card">
+            <div class="feature-icon purple-icon">⌘</div>
+            <h3>ML Detection</h3>
+            <p>Analyzes URL patterns using a trained model.</p>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon blue-icon">◎</div>
+            <h3>DNS Check</h3>
+            <p>Checks whether a hostname can be resolved.</p>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon green-icon">◇</div>
+            <h3>Risk Insights</h3>
+            <p>Displays model-based phishing risk information.</p>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <p>
+            Educational project only. DNS resolution does not prove
+            a website is online or safe. Model predictions may be incorrect.
+        </p>
+        <span>PhishGuard · Machine Learning Security</span>
+    </footer>
+
+</main>
+</body>
+</html>
